@@ -1,0 +1,128 @@
+<!DOCTYPE>
+<html>
+<script src="CpuOps.js"></script>
+<script src="model.js"></script>
+<script>
+    function TensorFromImage(img)
+    {
+        var canvas = document.createElement('canvas');
+        var context = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        context.drawImage(img, 0, 0 );
+        var imageData = context.getImageData(0, 0, img.width, img.height);
+        var tensorData = new Float32Array(img.width * img.height * 3);
+        var tensorIndex = 0;
+        var tensorPlane1Offset = img.width * img.height;
+        var tensorPlane2Offset = 2 * tensorPlane1Offset;
+        for (y = 0; y < img.height; y++)
+        {
+            var row = y * img.width * 4;
+            for (x = 0; x < img.width; x++)
+            {
+                pixel = row + x * 4;
+                tensorData[tensorIndex] = imageData.data[pixel] / 255.0;
+                tensorData[tensorIndex + tensorPlane1Offset] = imageData.data[pixel+1] / 255.0;
+                tensorData[tensorIndex + tensorPlane2Offset] = imageData.data[pixel+2] / 255.0;
+                tensorIndex++;
+            }
+        }
+        return tensorData;
+    }
+    function ImageFromTensor(tensorData, width, height)
+    {
+        var imageData = new Uint8ClampedArray(width * height * 4);
+        var tensorIndex = 0;
+        var tensorPlane1Offset = width * height;
+        var tensorPlane2Offset = 2 * tensorPlane1Offset;
+        for (y = 0; y < height; y++)
+        {
+            var row = y * width * 4;
+            for (x = 0; x < width; x++)
+            {
+                pixel = row + x * 4;
+                imageData[pixel] = tensorData[tensorIndex] * 255.0;
+                imageData[pixel+1]  = tensorData[tensorIndex + tensorPlane1Offset] * 255.0;
+                imageData[pixel+2] = tensorData[tensorIndex + tensorPlane2Offset] * 255.0;
+                imageData[pixel+3] = 255;
+                tensorIndex++;
+            }
+        }
+        return new ImageData(imageData, width, height);
+    }
+
+    async function main() {
+        var startTime = performance.now();
+        clearCanvas();
+        image = document.querySelector("img");
+        const tensor = TensorFromImage(image);
+
+        const context = await navigator.ml.createContext(
+                {'deviceType' : 'gpu'});
+        const builder = new MLGraphBuilder(context);
+        const operandType = {type: 'float32',
+            dataType: 'float32', dimensions: [1, 3, image.height, image.width]};
+        const input_operand = builder.input('input', operandType);
+        const weights_response = await fetch("weights.bin");
+        if (!weights_response.ok) {
+            throw new Error(`HTTP error, status = ${response.status}`);
+        }
+        const weights_buffer = await weights_response.arrayBuffer();
+        InstallCpuOps(builder);
+        const output_operand = loadModelGraph(input_operand, weights_buffer, builder);
+        // 2. Build the graph into an executable.
+        const graph = await builder.build({'output': output_operand});
+        const outputBuffer = new Float32Array(3*image.height*2*image.width*2);
+        const inputs = {'input': tensor};
+        const outputs = {'output': outputBuffer};
+        const result = await context.compute(graph, inputs, outputs);
+        const imageData = ImageFromTensor(result.outputs.output, image.width * 2, image.height * 2);
+        var canvasHTML = document.querySelector("canvas");
+        let canvas_context = canvasHTML.getContext('2d');
+        canvasHTML.width = imageData.width;
+        canvasHTML.height = imageData.height;
+        canvas_context.putImageData(imageData, 0, 0);
+        var endTime = performance.now();
+        document.querySelector("b").innerText = endTime - startTime + "ms " + image.width + " x " + image.height;
+    }
+    function clearCanvas() {
+        var canvasHTML = document.querySelector("canvas");
+        let context = canvasHTML.getContext('2d');
+        context.clearRect(0, 0, canvasHTML.width, canvasHTML.height);
+    }
+    function dropHandler(ev)
+    {
+        // Prevent default behavior (Prevent file from being opened)
+        ev.preventDefault();
+
+        if (ev.dataTransfer.items) {
+            // Use DataTransferItemList interface to access the file(s)
+            [...ev.dataTransfer.items].forEach((item, i) => {
+                // If dropped items aren't files, reject them
+                if (item.kind === "file") {
+                    const file = item.getAsFile();
+                    console.log(`A file[${i}].name = ${file.name}`);
+                    var reader=new FileReader();
+                    reader.onload= function (event) {
+                        var image = document.querySelector("img");
+                        image.src = reader.result;
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+        } else {
+            // Use DataTransfer interface to access the file(s)
+            [...ev.dataTransfer.files].forEach((file, i) => {
+                console.log(`B file[${i}].name = ${file.name}`);
+            });
+        }
+    }
+    function dragOverHandler(ev) {
+        ev.preventDefault();
+    }
+</script>
+<body>
+    <button onclick="main()">SuperRes</button><button onclick="clearCanvas()">Clear</button><span></span>|<b></b><br>
+    <img src="0567x2.png" ondrop="dropHandler(event)" ondragover="dragOverHandler(event);" onload="main()"></img><canvas style="zoom:0.5"></canvas>
+</body>
+</html>
