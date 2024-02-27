@@ -65,20 +65,25 @@
             return arr.reduce((product, value) => product * value, 1);
         }
         async function main() {
+            const weights_file = 'weights.bin';
+            let cache = await caches.open("weights")
+            const weights_response = await cache.match(weights_file);
+            if (!weights_response)
+            {
+                await cache.add(weights_file);
+                weights_response = await cache.match(weights_file);
+            }
+            const weights_buffer = await weights_response.arrayBuffer();
+
             var startTime = performance.now();
             clearCanvas();
             image = document.querySelector("img");
             const tensor = TensorFromImage(image);
-
+            
             const context = await navigator.ml.createContext(
                     {'deviceType' : 'gpu'});
             const builder = new MLGraphBuilder(context);
             InstallCpuOps(builder);
-            const weights_response = await fetch("weights.bin");
-            if (!weights_response.ok) {
-                throw new Error(`HTTP error, status = ${response.status}`);
-            }
-            const weights_buffer = await weights_response.arrayBuffer();
 
             // Build WebNN Graph and execute it
             const operandType = {type: 'float32',
