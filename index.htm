@@ -67,7 +67,7 @@
         async function main() {
             const weights_file = 'weights.bin';
             let cache = await caches.open("weights")
-            const weights_response = await cache.match(weights_file);
+            let weights_response = await cache.match(weights_file);
             if (!weights_response)
             {
                 await cache.add(weights_file);
@@ -79,22 +79,28 @@
             clearCanvas();
             image = document.querySelector("img");
             const tensor = TensorFromImage(image);
-            
-            const context = await navigator.ml.createContext(
-                    {'deviceType' : 'gpu'});
-            const builder = new MLGraphBuilder(context);
-            InstallCpuOps(builder);
 
             // Build WebNN Graph and execute it
-            const operandType = {type: 'float32',
-                dataType: 'float32', dimensions: [1, 3, tensor.height, tensor.width]};
-            const input_operand = builder.input('input', operandType);
-            const output_operand = loadModelGraph(input_operand, weights_buffer, builder);
-            const graph = await builder.build({'output': output_operand});
-            const outputBuffer = new Float32Array(mulReduce(output_operand.shape()));
-            const inputs = {'input': tensor};
-            const outputs = {'output': outputBuffer};
-            const result = await context.compute(graph, inputs, outputs);
+            let result = null;
+            try {
+                const context = await navigator.ml.createContext(
+                    {'deviceType' : 'gpu'});
+                const builder = new MLGraphBuilder(context);
+                InstallCpuOps(builder);
+
+                const operandType = {type: 'float32',
+                    dataType: 'float32', dimensions: [1, 3, tensor.height, tensor.width]};
+                const input_operand = builder.input('input', operandType);
+                const output_operand = loadModelGraph(input_operand, weights_buffer, builder);
+                const graph = await builder.build({'output': output_operand});
+                const outputBuffer = new Float32Array(mulReduce(output_operand.shape()));
+                const inputs = {'input': tensor};
+                const outputs = {'output': outputBuffer};
+                result = await context.compute(graph, inputs, outputs);
+            } catch (webnn_exception) {
+                document.querySelector("b").innerText = "Error: " + webnn_exception;
+                return;
+            }
 
             // Convert tensor back to image
             const imageData = ImageFromTensor(result.outputs.output, tensor.width * 2, tensor.height * 2);
@@ -147,9 +153,11 @@
     <h1>Rapid ESRGAN</h1>
     <div>
         <div>
-            ESRGAN implementation using WebNN, in your browser.
+            ESRGAN implementation using WebNN, Super Resolution in your browser.<br>
+            Enable Experimental WebNN here
+            <u>chrome://flags/#web-machine-learning-neural-network</u>
             <br><span>Inference Time <b>&#8734;</b></span><br>
-            Drop your own images here &#128071; 
+            <center>Drop your own images here &#128071;</center>
         </div>
         <button onclick="main()">SuperRes</button> <button onclick="clearCanvas()">Clear</button><br>
         <img src="0567x2.png" ondrop="dropHandler(event)" ondragover="dragOverHandler(event);" onload="main()"></img><br><canvas style="zoom:0.5"></canvas>
