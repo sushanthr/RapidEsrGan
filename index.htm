@@ -110,7 +110,7 @@
             canvasHTML.height = image.height*2;
             canvas_context.putImageData(imageData, 0, 0);
             var endTime = performance.now();
-            document.querySelector("b").innerText = Math.round(endTime - startTime) + "ms " + tensor.width + " x " + tensor.height;
+            document.querySelector("b").innerText = Math.round(endTime - startTime) + "ms " + tensor.width + " x " + tensor.height + " | " + Math.round((tensor.width*tensor.height)/Math.round(endTime - startTime)) + "K pixels/second";
         }
         function clearCanvas() {
             var canvasHTML = document.querySelector("canvas");
@@ -150,17 +150,21 @@
     </script>
 </head>
 <body>
-    <h1>Rapid ESRGAN</h1>
     <div>
+        <h1>Rapid ESRGAN</h1>
         <div>
-            ESRGAN implementation using WebNN, Super Resolution in your browser.<br>
-            Enable Experimental WebNN here
-            <u>chrome://flags/#web-machine-learning-neural-network</u>
-            <br><span>Inference Time <b>&#8734;</b></span><br>
-            <center>Drop your own images here &#128071;</center>
+            <div>
+                An ESRGAN implementation using WebNN, experience Super Resolution in your browser.<br>
+                <span class="light">
+                To enable experimental WebNN visit 
+                <u>chrome://flags/#web-machine-learning-neural-network</u>
+                <br><span>Metrics: Inference Time <b>&#8734;</b></span><br>
+                </span>
+            </div>
+            <button onclick="main()">SuperRes</button> <button onclick="clearCanvas()">Clear</button><br>
+            <center>&#128071 Drop your images here &#128071;</center>
+            <img src="0567x2.png" ondrop="dropHandler(event)" ondragover="dragOverHandler(event);" onload="main()"></img><br><canvas style="zoom:0.5"></canvas>
         </div>
-        <button onclick="main()">SuperRes</button> <button onclick="clearCanvas()">Clear</button><br>
-        <img src="0567x2.png" ondrop="dropHandler(event)" ondragover="dragOverHandler(event);" onload="main()"></img><br><canvas style="zoom:0.5"></canvas>
     </div>
 </body>
 </html>

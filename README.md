@@ -1,9 +1,9 @@
 ## RapidEsrGan
 
-An implementation of ESRGAN built on top of WebNN
+An implementation of ESRGAN using WebNN
 See https://sushanthr.github.io/RapidEsrGan/
 
-Fully offline, client side inference in your browser.
+Fully offline, client side super resolution in your browser.
 
 ## Model details
 Original model - https://github.com/xinntao/Real-ESRGAN
