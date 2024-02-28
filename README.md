@@ -17,7 +17,7 @@ Check https://webmachinelearning.github.io/webnn-status/ for updates on your fav
 For now the latest canary of any chromium based browser:<br>
 **Chrome/Edge Canary** on **Windows** has enough of the spec implemented for this implementation to work.<br>
 
-You would also need the experimental WebNN API enabled.
+You would also need the experimental WebNN API enabled, paste the following URL in the address bar for that.
 ```
 chrome://flags/#web-machine-learning-neural-network
 ```
