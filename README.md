@@ -14,7 +14,7 @@ WebNN is a new standard, in development.<br>
 Check https://webmachinelearning.github.io/webnn-status/ for updates on your fav platform/browser.<br>
 
 
-For now the latest canary of any chromium based browser<br>
+For now the latest canary of any chromium based browser:<br>
 **Chrome/Edge Canary** on **Windows** has enough of the spec implemented for this implementation to work.
 
 Chrome Canary https://www.google.com/chrome/canary/ <br>
